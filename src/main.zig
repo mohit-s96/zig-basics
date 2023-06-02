@@ -94,7 +94,6 @@ pub fn evaluate(operatorStack: *Stack, operandStack: *Stack, allocator: std.mem.
             operandStack.push(len);
         },
         '-' => {
-            std.debug.print("Left => {d}, Right => {d}\n", .{ leftOperand, rightOperand });
             const difference: f64 = leftOperand - rightOperand;
             const len = std.fmt.bufPrint(buffer, "{d}", .{difference}) catch unreachable;
             operandStack.push(len);
@@ -202,9 +201,110 @@ pub fn main() !void {
     std.debug.print("{s}\n", .{sum});
 }
 
-test "test-stdin-read" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+test "Addition" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
+    var arrayList = std.ArrayList([]u8).init(allocator);
+    var expression = "3 + 4";
+    for (expression) |ch| {
+        var value = try allocator.alloc(u8, 1);
+        value[0] = ch;
+        var slice: []u8 = value[0..1];
+        try arrayList.append(slice);
+    }
+
+    var actual = try eval(&arrayList, allocator);
+    var expected: []const u8 = "7";
+    try std.testing.expectEqualStrings(expected, actual);
+}
+
+test "Subtraction" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
+    var arrayList = std.ArrayList([]u8).init(allocator);
+    var expression = "42111 - 42";
+    for (expression) |ch| {
+        var value = try allocator.alloc(u8, 1);
+        value[0] = ch;
+        var slice: []u8 = value[0..1];
+        try arrayList.append(slice);
+    }
+
+    var actual = try eval(&arrayList, allocator);
+    var expected: []const u8 = "42069";
+    try std.testing.expectEqualStrings(expected, actual);
+}
+
+test "Multiplication" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
+    var arrayList = std.ArrayList([]u8).init(allocator);
+    var expression = "14023 * 3";
+    for (expression) |ch| {
+        var value = try allocator.alloc(u8, 1);
+        value[0] = ch;
+        var slice: []u8 = value[0..1];
+        try arrayList.append(slice);
+    }
+
+    var actual = try eval(&arrayList, allocator);
+    var expected: []const u8 = "42069";
+    try std.testing.expectEqualStrings(expected, actual);
+}
+
+test "Division" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
+    var arrayList = std.ArrayList([]u8).init(allocator);
+    var expression = "126207/3";
+    for (expression) |ch| {
+        var value = try allocator.alloc(u8, 1);
+        value[0] = ch;
+        var slice: []u8 = value[0..1];
+        try arrayList.append(slice);
+    }
+
+    var actual = try eval(&arrayList, allocator);
+    var expected: []const u8 = "42069";
+    try std.testing.expectEqualStrings(expected, actual);
+}
+
+test "Decimal" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
+    var arrayList = std.ArrayList([]u8).init(allocator);
+    var expression = "6*5/4";
+    for (expression) |ch| {
+        var value = try allocator.alloc(u8, 1);
+        value[0] = ch;
+        var slice: []u8 = value[0..1];
+        try arrayList.append(slice);
+    }
+
+    var actual = try eval(&arrayList, allocator);
+    var expected: []const u8 = "7.5";
+    try std.testing.expectEqualStrings(expected, actual);
+}
+
+test "Negative Number" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
+    var arrayList = std.ArrayList([]u8).init(allocator);
+    var expression = "9*4-100.5/2";
+    for (expression) |ch| {
+        var value = try allocator.alloc(u8, 1);
+        value[0] = ch;
+        var slice: []u8 = value[0..1];
+        try arrayList.append(slice);
+    }
+
+    var actual = try eval(&arrayList, allocator);
+    var expected: []const u8 = "-14.25";
+    try std.testing.expectEqualStrings(expected, actual);
 }
