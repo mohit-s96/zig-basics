@@ -25,13 +25,30 @@ const Stack = struct {
     }
 };
 
-pub fn parseU64(buf: *const []u8, radix: u8) !u64 {
+pub fn parseU64(buf: *const []u8, radix: u8) !f64 {
     var x: u64 = 0;
-
+    var decimalCounter: u64 = 1;
+    var parsingFractional: bool = false;
+    var sign: f64 = 1;
     for (buf.*) |c| {
+        if (parsingFractional) {
+            decimalCounter *= 10;
+        }
+        if (c == '.') {
+            if (parsingFractional) {
+                return error.InvalidChar;
+            }
+            parsingFractional = true;
+            continue;
+        }
+        if (c == '-') {
+            sign = -1;
+            continue;
+        }
         const digit = charToDigit(c);
 
         if (digit >= radix) {
+            std.log.debug("Invalid character => {c}\n", .{c});
             return error.InvalidChar;
         }
 
@@ -43,7 +60,9 @@ pub fn parseU64(buf: *const []u8, radix: u8) !u64 {
         x = ov[0];
     }
 
-    return x;
+    var result: f64 = (@intToFloat(f64, x)) * sign;
+    var decimalCounterFloat: f64 = @intToFloat(f64, decimalCounter);
+    return result / decimalCounterFloat;
 }
 
 fn charToDigit(c: u8) u8 {
@@ -65,28 +84,29 @@ pub fn greaterPrecedence(op1: *const []u8, op2: u8, map: std.AutoHashMap(u8, u8)
 pub fn evaluate(operatorStack: *Stack, operandStack: *Stack, allocator: std.mem.Allocator) !void {
     var operator = operatorStack.pop().?;
     if (operandStack.peek() == null) return;
-    var rightOperand: usize = try parseU64(&operandStack.pop().?, 10);
-    var leftOperand: usize = try parseU64(&operandStack.pop().?, 10);
+    var rightOperand: f64 = try parseU64(&operandStack.pop().?, 10);
+    var leftOperand: f64 = try parseU64(&operandStack.pop().?, 10);
     var buffer = try allocator.alloc(u8, 64);
     switch (operator[0]) {
         '+' => {
-            const sum: usize = rightOperand + leftOperand;
-            const len = std.fmt.bufPrint(buffer, "{}", .{sum}) catch unreachable;
+            const sum: f64 = rightOperand + leftOperand;
+            const len = std.fmt.bufPrint(buffer, "{d}", .{sum}) catch unreachable;
             operandStack.push(len);
         },
         '-' => {
-            const difference: usize = leftOperand - rightOperand;
-            const len = std.fmt.bufPrint(buffer, "{}", .{difference}) catch unreachable;
+            std.debug.print("Left => {d}, Right => {d}\n", .{ leftOperand, rightOperand });
+            const difference: f64 = leftOperand - rightOperand;
+            const len = std.fmt.bufPrint(buffer, "{d}", .{difference}) catch unreachable;
             operandStack.push(len);
         },
         '*' => {
-            const product: usize = leftOperand * rightOperand;
-            const len = std.fmt.bufPrint(buffer, "{}", .{product}) catch unreachable;
+            const product: f64 = leftOperand * rightOperand;
+            const len = std.fmt.bufPrint(buffer, "{d}", .{product}) catch unreachable;
             operandStack.push(len);
         },
         '/' => {
-            const quotient: usize = leftOperand / rightOperand;
-            const len = std.fmt.bufPrint(buffer, "{}", .{quotient}) catch unreachable;
+            const quotient: f64 = leftOperand / rightOperand;
+            const len = std.fmt.bufPrint(buffer, "{d}", .{quotient}) catch unreachable;
             operandStack.push(len);
         },
         else => {},
@@ -120,7 +140,7 @@ pub fn eval(expression: *std.ArrayList([]u8), allocator: std.mem.Allocator) ![]u
             '0'...'9' => {
                 var j = i;
                 while (i < tokens.len and !map.contains(tokens[i][0])) {
-                    if ((tokens[i][0] == ' ')) {
+                    if (tokens[i][0] == ' ') {
                         break;
                     }
                     i += 1;
@@ -153,6 +173,7 @@ pub fn eval(expression: *std.ArrayList([]u8), allocator: std.mem.Allocator) ![]u
     }
     while (operatorStack.peek() != null) {
         try evaluate(&operatorStack, &operandStack, allocator);
+        if (operatorStack.peek() == null) break;
     }
 
     var r = operandStack.pop().?;
