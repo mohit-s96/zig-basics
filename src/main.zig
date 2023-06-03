@@ -22,7 +22,10 @@ pub fn main() !void {
                 try arrayList.append(slice);
             }
         }
-        var sum = try maf.eval(&arrayList, allocator);
-        std.debug.print(">> {s}\n", .{sum});
+        if (maf.eval(&arrayList, allocator)) |sum| {
+            std.debug.print(">> {s}\n", .{sum});
+        } else |_| {
+            std.debug.print(">> Error - Invalid Character found\n", .{});
+        }
     }
 }

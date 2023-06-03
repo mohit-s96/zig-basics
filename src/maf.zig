@@ -48,7 +48,7 @@ pub fn parseU64(buf: *const []u8, radix: u8) !f64 {
         const digit = charToDigit(c);
 
         if (digit >= radix) {
-            std.log.debug("Invalid character => {c}\n", .{c});
+            std.debug.print("Invalid character => {c}\n", .{c});
             return error.InvalidChar;
         }
 
@@ -165,7 +165,6 @@ pub fn eval(expression: *std.ArrayList([]u8), allocator: std.mem.Allocator) ![]u
                 i += 1;
             },
             else => {
-                std.debug.print("{c}", .{token});
                 i += 1;
             },
         }
@@ -175,7 +174,7 @@ pub fn eval(expression: *std.ArrayList([]u8), allocator: std.mem.Allocator) ![]u
         if (operatorStack.peek() == null) break;
     }
 
-    var r = operandStack.pop().?;
+    var r = operandStack.pop() orelse return error.InvalidChar;
     return r;
 }
 
